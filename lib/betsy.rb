@@ -58,7 +58,7 @@ module Betsy
 
   CODE_CHALLENGE_CHARACTERS = ("A".."Z").to_a + ("a".."z").to_a + ("0".."9").to_a + [".", "_", "~", "-"]
 
-  def self.authorization_url(scope: ALL_SCOPES)
+  def self.authorization_url(user:, scope: ALL_SCOPES)
     if api_key.nil? && redirect_uri_base.nil?
       raise "Betsy.api_key and Betsy.redirect_uri_base must be set"
     elsif api_key.nil?
@@ -73,7 +73,7 @@ module Betsy
     code_verifier = generate_code_verifier
     code_challenge = Digest::SHA256.base64digest(code_verifier).tr("+/", "-_").tr("=", "")
 
-    account_class.create(state: state, code_verifier: code_verifier)
+    account_class.create(user_id: user.id, state: state, code_verifier: code_verifier)
 
     "https://www.etsy.com/oauth/connect" \
     "?response_type=code" \
