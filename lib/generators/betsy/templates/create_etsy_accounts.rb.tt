@@ -6,6 +6,7 @@ class CreateEtsyAccounts < ActiveRecord::Migration<%= migration_version %>
       t.integer :expires_in
       t.string :state
       t.string :code_verifier
+      t.integer :shop_id
       t.datetime :last_token_refresh
 
       t.timestamps

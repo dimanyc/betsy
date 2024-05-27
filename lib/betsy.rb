@@ -106,6 +106,12 @@ module Betsy
     end
   end
 
+  def self.upsert_shop_id(params)
+    etsy_account = account_class.find_by(state: params[:state])
+    shop_id = User.get_me(etsy_account: etsy_account).shop_id
+    etsy_account.update(shop_id: shop_id)
+  end
+
   def self.account_class
     @@account_class ||= account_model.constantize
   end
