@@ -34,8 +34,10 @@ module Betsy
   mattr_accessor :api_key
   mattr_accessor :redirect_uri_base
   mattr_accessor :account_model, default: "EtsyAccount"
+  mattr_accessor :channel_store_model, default: "ChannelStore"
 
-  ALL_SCOPES = ["address_r",
+  ALL_SCOPES = [
+    "address_r",
     "address_w",
     "billing_r",
     "cart_r",
@@ -54,7 +56,8 @@ module Betsy
     "shops_r",
     "shops_w",
     "transactions_r",
-    "transactions_w"]
+    "transactions_w"
+  ]
 
   CODE_CHALLENGE_CHARACTERS = ("A".."Z").to_a + ("a".."z").to_a + ("0".."9").to_a + [".", "_", "~", "-"]
 
@@ -73,16 +76,16 @@ module Betsy
     code_verifier = generate_code_verifier
     code_challenge = Digest::SHA256.base64digest(code_verifier).tr("+/", "-_").tr("=", "")
 
-    account_class.create(user_id: user.id, state: state, code_verifier: code_verifier)
+    account_class.create!(user_id: user.id, state: state, code_verifier: code_verifier)
 
     "https://www.etsy.com/oauth/connect" \
-    "?response_type=code" \
-    "&client_id=#{api_key}" \
-    "&redirect_uri=#{redirect_uri}" \
-    "&scope=#{scope}" \
-    "&state=#{state}" \
-    "&code_challenge=#{code_challenge}" \
-    "&code_challenge_method=S256"
+      "?response_type=code" \
+      "&client_id=#{api_key}" \
+      "&redirect_uri=#{redirect_uri}" \
+      "&scope=#{scope}" \
+      "&state=#{state}" \
+      "&code_challenge=#{code_challenge}" \
+      "&code_challenge_method=S256"
   end
 
   def self.request_access_token(params)
@@ -109,11 +112,19 @@ module Betsy
   def self.upsert_shop_id(params)
     etsy_account = account_class.find_by(state: params[:state])
     shop_id = User.get_me(etsy_account: etsy_account).shop_id
-    etsy_account.update(shop_id: shop_id)
+    channel = Channel.find_by!(name: "etsy")
+    store = channel_store_class.find_or_create_by!(shop_id: shop_id, channel: channel)
+    if etsy_account.channel_store_id.nil?
+      etsy_account.update!(channel_store_id: store.id)
+    end
   end
 
   def self.account_class
     @@account_class ||= account_model.constantize
+  end
+
+  def self.channel_store_class
+    @@channel_store_class ||= channel_store_model.constantize
   end
 
   class << self
